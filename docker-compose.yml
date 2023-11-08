@@ -1,0 +1,46 @@
+version: '3'
+services:
+  api:
+    build:
+      context: ./api
+    ports:
+      - "3001:3001"
+
+  react:
+    build:
+      context: ./react
+    ports:
+      - "80:3000"
+
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ticketerareact
+      MYSQL_USER: user # Agrega este usuario
+      MYSQL_PASSWORD: user # Cambia esta contraseña por una segura
+      MYSQL_ROOT_HOST: '%'  # needs to be enclosed with quotes
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      - ./grant_root_access.sql:/docker-entrypoint-initdb.d/grant_root_access.sql
+    command: --bind-address=0.0.0.0
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+
+  api-mssql:
+    build:
+      context: ./api-mssql  # Ruta al directorio donde está el Dockerfile de la API de Node.js
+    ports:
+      - "3002:3002"  # El puerto puede ser diferente si lo deseas
+    depends_on:
+      - mysql  # Asegúrate de que este servicio espere a que MySQL esté disponible antes de iniciar
