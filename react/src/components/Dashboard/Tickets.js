@@ -25,11 +25,22 @@ function Tickets() {
   const [asunto, setAsunto] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [archivos_adjuntos, setArchivosAdjuntos] = useState("");
+  const [archivos_adjuntos_2, setArchivosAdjuntos_2] = useState("");
+  const [archivos_adjuntos_3, setArchivosAdjuntos_3] = useState("");
+  const [archivos_adjuntos_4, setArchivosAdjuntos_4] = useState("");
+
+  const [archivosAdjuntosBase64, setArchivosAdjuntosBase64] = useState('');
+  const [archivosAdjuntosBase64_2, setArchivosAdjuntosBase64_2] = useState('');
+  const [archivosAdjuntosBase64_3, setArchivosAdjuntosBase64_3] = useState('');
+  const [archivosAdjuntosBase64_4, setArchivosAdjuntosBase64_4] = useState('');
+
+
   const [fecha_vencimiento, setFechaVencimiento] = useState('');
   const [visible_cliente, setVisibleCliente] = useState(true);
   const [showAlert, setShowAlert] = useState(false);
   const [ticketsData, setTicketsData] = useState(null); // Agrega el estado para almacenar los tickets
-  const [archivosAdjuntosBase64, setArchivosAdjuntosBase64] = useState('');
+
+
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [sector, setSector] = useState("default");
   const [sectores, setSectores] = useState([]);
@@ -242,7 +253,7 @@ function Tickets() {
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (casa === 'default' || prioridad === 'default' || estado === 'default' || !asunto || !descripcion || sector === 'default' || subsector === 'default' || derivado === 'default' ) {
+    if (casa === 'default' || prioridad === 'default' || estado === 'default' || !asunto || !descripcion || sector === 'default' || subsector === 'default' || derivado === 'default') {
       setShowAlert(true);
       return;
     }
@@ -255,6 +266,9 @@ function Tickets() {
       asunto,
       descripcion,
       archivos_adjuntos: archivosAdjuntosBase64, // Usar la variable de base64
+      archivos_adjuntos_2: archivosAdjuntosBase64_2,
+      archivos_adjuntos_3: archivosAdjuntosBase64_3,
+      archivos_adjuntos_4: archivosAdjuntosBase64_4,
       fecha_vencimiento,
       visible_cliente,
       sector,
@@ -285,7 +299,7 @@ function Tickets() {
       });
   };
 
-  
+
   function handleTemplateChange(selectedTemplate) {
     if (selectedTemplate === "Sin plantilla") {
       setAsunto("");
@@ -302,7 +316,7 @@ function Tickets() {
     }
     // Puedes agregar más plantillas y lógica aquí
   }
-  
+
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -332,237 +346,306 @@ function Tickets() {
   }, [userData.casa]);
 
   let abiertoCount = 0;
-let cerradoCount = 0;
-let enProgresoCount = 0;
-let totalTickets = 0;
+  let cerradoCount = 0;
+  let enProgresoCount = 0;
+  let totalTickets = 0;
 
-  
-ticketsData &&
-  ticketsData.forEach((ticket) => {
-    // Verifica si el usuario es un cliente y si el ticket no debe ser visible para los clientes
-    if (userData.cargo === 'cliente' && ticket.visible_cliente === 0) {
-      // No incrementa los contadores
+
+  ticketsData &&
+    ticketsData.forEach((ticket) => {
+      // Verifica si el usuario es un cliente y si el ticket no debe ser visible para los clientes
+      if (userData.cargo === 'cliente' && ticket.visible_cliente === 0) {
+        // No incrementa los contadores
+        return;
+      }
+
+      // Incrementa el contador total de tickets
+      totalTickets++;
+
+      // Incrementa el contador según el estado del ticket
+      if (ticket.estado === 'Abierto') {
+        abiertoCount++;
+      } else if (ticket.estado === 'Cerrado') {
+        cerradoCount++;
+      } else if (ticket.estado === 'En progreso') {
+        enProgresoCount++;
+      }
+    });
+
+  // Crea el array ticketsparadatos después de contar los tickets
+  const ticketsparadatos = [
+    {
+      name: "Cerrado",
+      sales: cerradoCount,
+    },
+    {
+      name: "En progreso",
+      sales: enProgresoCount,
+    },
+    {
+      name: "Abierto",
+      sales: abiertoCount,
+    },
+  ];
+
+  const [value, setValue] = React.useState(null);
+
+  const casasConteo = {};
+
+  // Mapea los tickets para realizar el conteo
+  ticketsData &&
+    ticketsData.forEach((ticket) => {
+      // Verifica si el usuario es un cliente y si el ticket no debe ser visible para los clientes
+      if (userData.cargo === 'cliente' && ticket.visible_cliente === 0) {
+        // No incrementa el contador
+        return;
+      }
+
+      const nombreCasa = ticket.nombre_casa;
+
+      // Incrementa el contador de tickets para la casa correspondiente
+      if (casasConteo[nombreCasa]) {
+        casasConteo[nombreCasa]++;
+      } else {
+        casasConteo[nombreCasa] = 1;
+      }
+    });
+
+  // Crea el array casaparadata a partir del objeto de conteo
+  const casaparadata = Object.entries(casasConteo).map(([nombreCasa, cantidadTickets]) => ({
+    name: nombreCasa,
+    sales: cantidadTickets,
+  }));
+
+  const exportToExcel = () => {
+    // Crea una copia de los datos y modifica el contenido de las celdas según tus preferencias
+    const modifiedData = ticketsData.map((ticket) => ({
+      ID: ticket.id, // Cambia el nombre de la primera columna de "id" a "ID"
+      'N° de Seguimiento': ticket.tracking_id, // Cambia el nombre de la columna
+      Casa: ticket.nombre_casa, // Cambia el nombre de la columna
+      Creador: ticket.nombre_creador, // Cambia el nombre de la columna
+      Asunto: ticket.asunto,
+      Descripcion: ticket.descripcion,
+      Estado: ticket.estado,
+      Prioridad: ticket.prioridad,
+      Sector: ticket.sector,
+      Subsector: ticket.subsector,
+      Derivado: ticket.derivado,
+      'Fecha de vencimiento': new Date(ticket.fecha_vencimiento)
+        .toLocaleDateString()
+        .split('-')
+        .reverse()
+        .join('-'),
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(modifiedData);
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tabla de Tickets');
+
+    const excelArray = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+    const blob = new Blob([excelArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tickets.xlsx';
+    a.click();
+
+    URL.revokeObjectURL(url);
+  };
+
+
+  const exportToPDF = () => {
+    if (!selectedTicket) {
+      alert('No se ha seleccionado un ticket.');
       return;
     }
 
-    // Incrementa el contador total de tickets
-    totalTickets++;
+    const pdf = new jsPDF();
+    let yPosition = 10; // Posición vertical inicial
+    const pageHeight = pdf.internal.pageSize.height;
+    const maxTextWidth = 180; // Ancho máximo antes de dividir el texto
 
-    // Incrementa el contador según el estado del ticket
-    if (ticket.estado === 'Abierto') {
-      abiertoCount++;
-    } else if (ticket.estado === 'Cerrado') {
-      cerradoCount++;
-    } else if (ticket.estado === 'En progreso') {
-      enProgresoCount++;
-    }
-  });
-
-// Crea el array ticketsparadatos después de contar los tickets
-const ticketsparadatos = [
-  {
-    name: "Cerrado",
-    sales: cerradoCount,
-  },
-  {
-    name: "En progreso",
-    sales: enProgresoCount,
-  },
-  {
-    name: "Abierto",
-    sales: abiertoCount,
-  },
-];
-
-    const [value, setValue] = React.useState(null);
-
-    const casasConteo = {};
-
-    // Mapea los tickets para realizar el conteo
-    ticketsData &&
-      ticketsData.forEach((ticket) => {
-        // Verifica si el usuario es un cliente y si el ticket no debe ser visible para los clientes
-        if (userData.cargo === 'cliente' && ticket.visible_cliente === 0) {
-          // No incrementa el contador
-          return;
-        }
-    
-        const nombreCasa = ticket.nombre_casa;
-    
-        // Incrementa el contador de tickets para la casa correspondiente
-        if (casasConteo[nombreCasa]) {
-          casasConteo[nombreCasa]++;
-        } else {
-          casasConteo[nombreCasa] = 1;
-        }
-      });
-    
-    // Crea el array casaparadata a partir del objeto de conteo
-    const casaparadata = Object.entries(casasConteo).map(([nombreCasa, cantidadTickets]) => ({
-      name: nombreCasa,
-      sales: cantidadTickets,
-    }));
-
-    const exportToExcel = () => {
-      // Crea una copia de los datos y modifica el contenido de las celdas según tus preferencias
-      const modifiedData = ticketsData.map((ticket) => ({
-        ID: ticket.id, // Cambia el nombre de la primera columna de "id" a "ID"
-        'N° de Seguimiento': ticket.tracking_id, // Cambia el nombre de la columna
-        Casa: ticket.nombre_casa, // Cambia el nombre de la columna
-        Creador: ticket.nombre_creador, // Cambia el nombre de la columna
-        Asunto: ticket.asunto,
-        Descripcion: ticket.descripcion,
-        Estado: ticket.estado,
-        Prioridad: ticket.prioridad,
-        Sector: ticket.sector,
-        Subsector: ticket.subsector,
-        Derivado: ticket.derivado,
-        'Fecha de vencimiento': new Date(ticket.fecha_vencimiento)
-          .toLocaleDateString()
-          .split('-')
-          .reverse()
-          .join('-'),
-      }));
-  
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.json_to_sheet(modifiedData);
-  
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Tabla de Tickets');
-  
-      const excelArray = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  
-      const blob = new Blob([excelArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-  
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'tickets.xlsx';
-      a.click();
-  
-      URL.revokeObjectURL(url);
+    const addPageIfNeeded = (heightToAdd) => {
+      if (yPosition + heightToAdd > pageHeight - 20) {
+        pdf.addPage();
+        yPosition = 10;
+      }
     };
 
+    // Agrega la imagen al principio del PDF
+    const image = new Image();
+    image.src = '/limpiolux-icon.png'; // Ruta a la imagen en la carpeta "public"
+    pdf.addImage(image, 'PNG', 10, yPosition, 0, 20); // Ancho de la imagen (0) y ajusta solo la posición vertical
+    yPosition += 30; // Ajusta la posición vertical después de la imagen
 
-    const exportToPDF = () => {
-      if (!selectedTicket) {
-        alert('No se ha seleccionado un ticket.');
-        return;
+    // Agrega el contenido al PDF, excluyendo el archivo adjunto
+    pdf.text(`Número de seguimiento: ${selectedTicket.tracking_id}`, 10, yPosition);
+    yPosition += 10;
+    addPageIfNeeded(10);
+
+    // Texto a mostrar, incluyendo la etiqueta "Casa"
+    const casaText = `Casa: ${selectedTicket.nombre_casa}`;
+
+    // Divide el texto en múltiples líneas si es necesario
+    const casaTextLines = pdf.splitTextToSize(casaText, maxTextWidth);
+
+    // Itera sobre las líneas del texto y las agrega al PDF
+    casaTextLines.forEach((line) => {
+      pdf.text(line, 10, yPosition);
+      yPosition += 10;
+      addPageIfNeeded(10);
+    });
+
+
+    pdf.text(`Prioridad: ${selectedTicket.prioridad}`, 10, yPosition);
+    yPosition += 10;
+    addPageIfNeeded(10);
+
+    pdf.text(`Estado: ${selectedTicket.estado}`, 10, yPosition);
+    yPosition += 10;
+    addPageIfNeeded(10);
+
+    pdf.text(`Sector: ${selectedTicket.sector}`, 10, yPosition);
+    yPosition += 10;
+    addPageIfNeeded(10);
+
+    pdf.text(`Subsector: ${selectedTicket.subsector}`, 10, yPosition);
+    yPosition += 10;
+    addPageIfNeeded(10);
+
+    pdf.text(`Asunto: ${selectedTicket.asunto}`, 10, yPosition);
+    yPosition += 10;
+    addPageIfNeeded(10);
+
+    // Divide la descripción en múltiples líneas
+    const descriptionLines = pdf.splitTextToSize(selectedTicket.descripcion, maxTextWidth);
+    pdf.text('Descripción:', 10, yPosition);
+    yPosition += 10;
+
+    // Agrega la descripción línea por línea
+    descriptionLines.forEach((line) => {
+      addPageIfNeeded(10);
+      pdf.text(line, 10, yPosition);
+      yPosition += 10;
+    });
+
+    addPageIfNeeded(10);
+
+    pdf.text(`Fecha de vencimiento: ${selectedTicket.fecha_vencimiento}`, 10, yPosition);
+    yPosition += 10;
+    addPageIfNeeded(10);
+
+    pdf.text(`Derivado a: ${selectedTicket.derivado}`, 10, yPosition);
+    yPosition += 10;
+
+    // Agrega una página en blanco para el archivo adjunto
+    pdf.addPage();
+    yPosition = 10;
+
+    // Verifica si hay una cadena base64 para el archivo adjunto (acepta JPEG, JPG y PNG)
+    if (selectedTicket.archivos_adjuntos) {
+      const imageWidth = 180; // Ancho de la imagen en el PDF
+      const imageHeight = 180; // Alto de la imagen en el PDF
+
+      // Verifica si la cadena base64 comienza con la cabecera de JPEG, JPG o PNG
+      if (selectedTicket.archivos_adjuntos.startsWith('data:image/jpeg') || selectedTicket.archivos_adjuntos.startsWith('data:image/jpg')) {
+        pdf.addImage(selectedTicket.archivos_adjuntos, 'JPEG', 10, yPosition, imageWidth, imageHeight);
+      } else if (selectedTicket.archivos_adjuntos.startsWith('data:image/png')) {
+        pdf.addImage(selectedTicket.archivos_adjuntos, 'PNG', 10, yPosition, imageWidth, imageHeight);
       }
-    
-      const pdf = new jsPDF();
-      let yPosition = 10; // Posición vertical inicial
-      const pageHeight = pdf.internal.pageSize.height;
-      const maxTextWidth = 180; // Ancho máximo antes de dividir el texto
-    
-      const addPageIfNeeded = (heightToAdd) => {
-        if (yPosition + heightToAdd > pageHeight - 20) {
-          pdf.addPage();
-          yPosition = 10;
+    }
+
+    // Guarda el PDF o abre una nueva ventana del navegador para mostrarlo
+    pdf.save('ticket.pdf');
+  };
+
+  const handleFileChange = (event) => {
+  const files = event.target.files;
+  const MAX_FILES = 4;
+
+  if (files.length > MAX_FILES) {
+    alert("Solo puedes seleccionar 4 o menos fotos.");
+    event.target.value = ''; // Limpia el input
+  } else {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        switch (i) {
+          case 0:
+            setArchivosAdjuntosBase64(e.target.result);
+            break;
+          case 1:
+            setArchivosAdjuntosBase64_2(e.target.result);
+            break;
+          case 2:
+            setArchivosAdjuntosBase64_3(e.target.result);
+            break;
+          case 3:
+            setArchivosAdjuntosBase64_4(e.target.result);
+            break;
+          default:
+            break;
         }
       };
 
-// Agrega la imagen al principio del PDF
-const image = new Image();
-image.src = '/limpiolux-icon.png'; // Ruta a la imagen en la carpeta "public"
-pdf.addImage(image, 'PNG', 10, yPosition, 0, 20); // Ancho de la imagen (0) y ajusta solo la posición vertical
-yPosition += 30; // Ajusta la posición vertical después de la imagen
-    
-      // Agrega el contenido al PDF, excluyendo el archivo adjunto
-      pdf.text(`Número de seguimiento: ${selectedTicket.tracking_id}`, 10, yPosition);
-      yPosition += 10;
-      addPageIfNeeded(10);
-    
-// Texto a mostrar, incluyendo la etiqueta "Casa"
-const casaText = `Casa: ${selectedTicket.nombre_casa}`;
-
-// Divide el texto en múltiples líneas si es necesario
-const casaTextLines = pdf.splitTextToSize(casaText, maxTextWidth);
-
-// Itera sobre las líneas del texto y las agrega al PDF
-casaTextLines.forEach((line) => {
-  pdf.text(line, 10, yPosition);
-  yPosition += 10;
-  addPageIfNeeded(10);
-});
-
-    
-      pdf.text(`Prioridad: ${selectedTicket.prioridad}`, 10, yPosition);
-      yPosition += 10;
-      addPageIfNeeded(10);
-    
-      pdf.text(`Estado: ${selectedTicket.estado}`, 10, yPosition);
-      yPosition += 10;
-      addPageIfNeeded(10);
-    
-      pdf.text(`Sector: ${selectedTicket.sector}`, 10, yPosition);
-      yPosition += 10;
-      addPageIfNeeded(10);
-    
-      pdf.text(`Subsector: ${selectedTicket.subsector}`, 10, yPosition);
-      yPosition += 10;
-      addPageIfNeeded(10);
-    
-      pdf.text(`Asunto: ${selectedTicket.asunto}`, 10, yPosition);
-      yPosition += 10;
-      addPageIfNeeded(10);
-    
-      // Divide la descripción en múltiples líneas
-      const descriptionLines = pdf.splitTextToSize(selectedTicket.descripcion, maxTextWidth);
-      pdf.text('Descripción:', 10, yPosition);
-      yPosition += 10;
-    
-      // Agrega la descripción línea por línea
-      descriptionLines.forEach((line) => {
-        addPageIfNeeded(10);
-        pdf.text(line, 10, yPosition);
-        yPosition += 10;
-      });
-    
-      addPageIfNeeded(10);
-    
-      pdf.text(`Fecha de vencimiento: ${selectedTicket.fecha_vencimiento}`, 10, yPosition);
-      yPosition += 10;
-      addPageIfNeeded(10);
-    
-      pdf.text(`Derivado a: ${selectedTicket.derivado}`, 10, yPosition);
-      yPosition += 10;
-    
-      // Agrega una página en blanco para el archivo adjunto
-      pdf.addPage();
-      yPosition = 10;
-    
-      // Verifica si hay una cadena base64 para el archivo adjunto (acepta JPEG, JPG y PNG)
-      if (selectedTicket.archivos_adjuntos) {
-        const imageWidth = 180; // Ancho de la imagen en el PDF
-        const imageHeight = 180; // Alto de la imagen en el PDF
-    
-        // Verifica si la cadena base64 comienza con la cabecera de JPEG, JPG o PNG
-        if (selectedTicket.archivos_adjuntos.startsWith('data:image/jpeg') || selectedTicket.archivos_adjuntos.startsWith('data:image/jpg')) {
-          pdf.addImage(selectedTicket.archivos_adjuntos, 'JPEG', 10, yPosition, imageWidth, imageHeight);
-        } else if (selectedTicket.archivos_adjuntos.startsWith('data:image/png')) {
-          pdf.addImage(selectedTicket.archivos_adjuntos, 'PNG', 10, yPosition, imageWidth, imageHeight);
-        }
-      }
-    
-      // Guarda el PDF o abre una nueva ventana del navegador para mostrarlo
-      pdf.save('ticket.pdf');
-    };
-
-    const handleFileChange = (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setArchivosAdjuntosBase64(e.target.result);
-        };
-        reader.readAsDataURL(file);
-      }
-    };
+      reader.readAsDataURL(file);
+    }
+  }
+};
   
-    const eliminarImagen = () => {
-      setArchivosAdjuntosBase64(null);
-      document.getElementById('file_input').value = ''; // Vaciar el input
-    };
+  const handleFileChange_2 = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setArchivosAdjuntosBase64_2(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFileChange_3 = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setArchivosAdjuntosBase64_3(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFileChange_4 = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setArchivosAdjuntosBase64_4(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const eliminarImagen = () => {
+    setArchivosAdjuntosBase64(null);
+  };
+
+  const eliminarImagen_2 = () => {
+    setArchivosAdjuntosBase64_2(null);
+  };
+
+  const eliminarImagen_3 = () => {
+    setArchivosAdjuntosBase64_3(null);
+  };
+
+  const eliminarImagen_4 = () => {
+    setArchivosAdjuntosBase64_4(null);
+  };
 
   return (
     <div>
@@ -576,7 +659,7 @@ casaTextLines.forEach((line) => {
             <Button
               variant="bordered"
             >
-              <AiOutlineSortAscending />  <p style={{ marginRight: '5px' }}>Filtrar ticket: {selectedOption}</p> 
+              <AiOutlineSortAscending />  <p style={{ marginRight: '5px' }}>Filtrar ticket: {selectedOption}</p>
             </Button>
           </DropdownTrigger>
 
@@ -604,46 +687,46 @@ casaTextLines.forEach((line) => {
       </div>
 
       <div class="modal fade" id="exampleModal3" tabindex="-1" aria-labelledby="exampleModalLabel2" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h1 class="modal-title fs-5" id="exampleModalLabel">Visualizar tickets</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><AiOutlineClose /></button>
-      </div>
-      <div class="modal-body">
-      <Card className="max-w-lg">
-    <Title>Por estados:</Title>
-    <DonutChart
-      className="mt-6"
-      data={ticketsparadatos}
-      category="sales"
-      index="name"
-      colors={["red", "green", "teal", "rose", "cyan", "amber"]}
-      onValueChange={(v) => setValue(v)}
-    />
-      </Card>
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h1 class="modal-title fs-5" id="exampleModalLabel">Visualizar tickets</h1>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><AiOutlineClose /></button>
+            </div>
+            <div class="modal-body">
+              <Card className="max-w-lg">
+                <Title>Por estados:</Title>
+                <DonutChart
+                  className="mt-6"
+                  data={ticketsparadatos}
+                  category="sales"
+                  index="name"
+                  colors={["red", "green", "teal", "rose", "cyan", "amber"]}
+                  onValueChange={(v) => setValue(v)}
+                />
+              </Card>
 
-      <Card className="max-w-lg" style={{ marginTop: "20px" }}>
+              <Card className="max-w-lg" style={{ marginTop: "20px" }}>
 
-      <Title>Por casa:</Title>
-    <DonutChart
-      className="mt-6"
-      data={casaparadata}
-      category="sales"
-      index="name"
-      colors={["blue", "violet", "indigo", "rose", "cyan", "amber"]}
-      onValueChange={(v) => setValue(v)}
-    />
-      </Card>
+                <Title>Por casa:</Title>
+                <DonutChart
+                  className="mt-6"
+                  data={casaparadata}
+                  category="sales"
+                  index="name"
+                  colors={["blue", "violet", "indigo", "rose", "cyan", "amber"]}
+                  onValueChange={(v) => setValue(v)}
+                />
+              </Card>
 
+            </div>
+            <div class="modal-footer">
+              <Button type="button" variant="flat" color='danger' data-bs-dismiss="modal">Cerrar</Button>
+              <Button onClick={exportToExcel} type="button" className='text-white' style={{ backgroundColor: '#00a144' }}><PiMicrosoftExcelLogoFill />Exportar tickets</Button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="modal-footer">
-      <Button type="button" variant="flat" color='danger' data-bs-dismiss="modal">Cerrar</Button>
-      <Button onClick={exportToExcel} type="button" className='text-white' style={{ backgroundColor: '#00a144' }}><PiMicrosoftExcelLogoFill />Exportar tickets</Button>
-      </div>
-    </div>
-  </div>
-</div>
 
       <div style={{ margin: "15px" }}>
 
@@ -743,46 +826,46 @@ casaTextLines.forEach((line) => {
                         ))}
                       </select></div>
 
-                      <div>
+                    <div>
                       <label for="countries" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center"><CgTemplate className="mr-1" />Plantilla de mensaje</label>
 
-  <select
-  id="template"
-  onChange={(event) => handleTemplateChange(event.target.value)}
-  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
->
-  <option value="Sin plantilla">Sin plantilla</option>
-  <option value="Solicitud de Insumos">Solicitud de Insumos</option>
-  <option value="Limpieza Urgente">Limpieza Urgente</option>
-  <option value="Mantenimiento Programado">Mantenimiento Programado</option>
-  {/* Agrega más opciones de plantilla según sea necesario */}
-</select>
+                      <select
+                        id="template"
+                        onChange={(event) => handleTemplateChange(event.target.value)}
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                      >
+                        <option value="Sin plantilla">Sin plantilla</option>
+                        <option value="Solicitud de Insumos">Solicitud de Insumos</option>
+                        <option value="Limpieza Urgente">Limpieza Urgente</option>
+                        <option value="Mantenimiento Programado">Mantenimiento Programado</option>
+                        {/* Agrega más opciones de plantilla según sea necesario */}
+                      </select>
 
-</div>
+                    </div>
 
 
                   </div>
                   <div class="mb-6">
-                      <label for="website" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center"> <AiOutlineMail className="mr-1" />Asunto</label>
-                      <input
-                        type="text"
-                        id="asunto"
-                        value={asunto}
-                        maxLength="22"
-                        onChange={(event) => setAsunto(event.target.value)}
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                        placeholder="Titulo del ticket"
-                        required
-                      />
-<p
-  className="mt-1 text-sm text-gray-500 dark:text-gray-300 mb-6"
-  id="file_input_help"
-  style={{ display: 'flex', alignItems: 'center' }}
->
-  <span><TiInfoLarge/></span>
-  <span>Número máximo de caracteres: 22.</span>
-</p>
-                    </div>
+                    <label for="website" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center"> <AiOutlineMail className="mr-1" />Asunto</label>
+                    <input
+                      type="text"
+                      id="asunto"
+                      value={asunto}
+                      maxLength="22"
+                      onChange={(event) => setAsunto(event.target.value)}
+                      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                      placeholder="Titulo del ticket"
+                      required
+                    />
+                    <p
+                      className="mt-1 text-sm text-gray-500 dark:text-gray-300 mb-6"
+                      id="file_input_help"
+                      style={{ display: 'flex', alignItems: 'center' }}
+                    >
+                      <span><TiInfoLarge /></span>
+                      <span>Número máximo de caracteres: 22.</span>
+                    </p>
+                  </div>
                   <div class="mb-6">
                     <label for="message" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center"> <AiOutlineForm className="mr-1" /> Descripción</label>
                     <textarea
@@ -793,8 +876,8 @@ casaTextLines.forEach((line) => {
                       onChange={(event) => setDescripcion(event.target.value)}
                       class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                       placeholder="Escriba los detalles..."
-                    ></textarea> 
-   </div>
+                    ></textarea>
+                  </div>
                   <div class="mb-6">
 
 
@@ -805,24 +888,46 @@ casaTextLines.forEach((line) => {
                       class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
                       aria-describedby="file_input_help"
                       id="file_input"
-                      type="file"
                       onChange={handleFileChange}
+                      type="file"
+                      multiple={true} // Permite la selección múltiple
                     />
-<p
-  className="mt-1 text-sm text-gray-500 dark:text-gray-300 mb-6"
-  id="file_input_help"
-  style={{ display: 'flex', alignItems: 'center' }}
->
-  <span><TiInfoLarge/></span>
-  <span>Formatos aceptados: JPG, JPEG, PNG</span>
-</p>                    <div>
-                      {archivosAdjuntosBase64 && (
-                        <div>
-                        <img src={archivosAdjuntosBase64} alt="Imagen adjunta" style={{ marginTop: '-10px', marginBottom: '12px' }} />
-                        <button class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" onClick={eliminarImagen} style={{ marginTop: "15px", marginBottom: "15px" }}>Eliminar imagen</button> 
-                        </div>
-                      )}
-                    </div>
+                    <p
+                      className="mt-1 text-sm text-gray-500 dark:text-gray-300 mb-6"
+                      id="file_input_help"
+                      style={{ display: 'flex', alignItems: 'center' }}
+                    >
+                      <span><TiInfoLarge /></span>
+                      <span>Formatos aceptados: JPG, JPEG, PNG</span>
+                    </p>
+                    <div>
+  {archivosAdjuntosBase64 && (
+    <div>
+      <img src={archivosAdjuntosBase64} alt="Imagen adjunta 1" style={{ marginTop: '-10px', marginBottom: '12px' }} />
+      <button className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" onClick={eliminarImagen} style={{ marginTop: "15px", marginBottom: "15px" }}>Eliminar imagen 1</button>
+    </div>
+  )}
+  {archivosAdjuntosBase64_2 && (
+    <div>
+      <img src={archivosAdjuntosBase64_2} alt="Imagen adjunta 2" style={{ marginTop: '-10px', marginBottom: '12px' }} />
+      <button className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" onClick={eliminarImagen_2} style={{ marginTop: "15px", marginBottom: "15px" }}>Eliminar imagen 2</button>
+    </div>
+  )}
+  {archivosAdjuntosBase64_3 && (
+    <div>
+      <img src={archivosAdjuntosBase64_3} alt="Imagen adjunta 3" style={{ marginTop: '-10px', marginBottom: '12px' }} />
+      <button className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" onClick={eliminarImagen_3} style={{ marginTop: "15px", marginBottom: "15px" }}>Eliminar imagen 3</button>
+    </div>
+  )}
+  {archivosAdjuntosBase64_4 && (
+    <div>
+      <img src={archivosAdjuntosBase64_4} alt="Imagen adjunta 4" style={{ marginTop: '-10px', marginBottom: '12px' }} />
+      <button className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" onClick={eliminarImagen_4} style={{ marginTop: "15px", marginBottom: "15px" }}>Eliminar imagen 4</button>
+    </div>
+  )}
+</div>
+
+
                     <div class="mb-6">
                       <label for="countries" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center"><AiOutlineTeam className="mr-1" />Derivar ticket</label>
                       <select
@@ -832,12 +937,12 @@ casaTextLines.forEach((line) => {
                         onChange={(event) => setDerivado(event.target.value)}
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                       >
-    <option value="default">Selecciona una persona</option>
-    {users.map((user) => (
-      <option key={user.nombre} value={user.nombre}>
-        {user.nombre}
-      </option>
-    ))}
+                        <option value="default">Selecciona una persona</option>
+                        {users.map((user) => (
+                          <option key={user.nombre} value={user.nombre}>
+                            {user.nombre}
+                          </option>
+                        ))}
                       </select></div>
 
                     <div></div>
@@ -900,63 +1005,63 @@ casaTextLines.forEach((line) => {
             <TableColumn>Fecha de vencimiento</TableColumn>
           </TableHeader>
           <TableBody>
-  {ticketsData &&
-    ticketsData.map((ticket) => {
-      // Verifica si el usuario es un cliente y si el ticket no debe ser visible para los clientes
-      if (userData.cargo === 'cliente' && ticket.visible_cliente === 0) {
-        // No renderiza la fila
-        return null;
-      }
+            {ticketsData &&
+              ticketsData.map((ticket) => {
+                // Verifica si el usuario es un cliente y si el ticket no debe ser visible para los clientes
+                if (userData.cargo === 'cliente' && ticket.visible_cliente === 0) {
+                  // No renderiza la fila
+                  return null;
+                }
 
-      // Incrementa el contador total de tickets
-      totalTickets++;
+                // Incrementa el contador total de tickets
+                totalTickets++;
 
-      // Filtra las filas según el valor de selectedOption
-      if (selectedOption === 'Todos' || ticket.estado === selectedOption) {
-        // Incrementa el contador según el estado del ticket
-        if (ticket.estado === 'Abierto') {
-          abiertoCount++;
-        } else if (ticket.estado === 'Cerrado') {
-          cerradoCount++;
-        } else if (ticket.estado === 'En progreso') {
-          enProgresoCount++;
-        }
+                // Filtra las filas según el valor de selectedOption
+                if (selectedOption === 'Todos' || ticket.estado === selectedOption) {
+                  // Incrementa el contador según el estado del ticket
+                  if (ticket.estado === 'Abierto') {
+                    abiertoCount++;
+                  } else if (ticket.estado === 'Cerrado') {
+                    cerradoCount++;
+                  } else if (ticket.estado === 'En progreso') {
+                    enProgresoCount++;
+                  }
 
-        return (
-          <TableRow key={ticket.id}>
-            <TableCell>
-              <Tooltip content="Detalles">
-                <span
-                  className="text-lg text-default-400 cursor-pointer active:opacity-50"
-                  data-bs-toggle="modal"
-                  data-bs-target="#exampleModal2"
-                  onClick={() => setSelectedTicket(ticket)}
-                >
-                  <AiFillEye />
-                </span>
-              </Tooltip>
-            </TableCell>
-            <TableCell>{ticket.tracking_id}</TableCell>
-            <TableCell>{ticket.nombre_casa}</TableCell>
-            <TableCell>{ticket.nombre_creador}</TableCell>
-            <TableCell>{ticket.asunto}</TableCell>
-            <TableCell>{ticket.estado}</TableCell>
-            <TableCell>{ticket.prioridad}</TableCell>
-            <TableCell>{ticket.sector}</TableCell>
-            <TableCell>
-              {new Date(ticket.fecha_vencimiento)
-                .toLocaleDateString()
-                .split('-')
-                .reverse()
-                .join('-')}
-            </TableCell>
-          </TableRow>
-        );
-      }
+                  return (
+                    <TableRow key={ticket.id}>
+                      <TableCell>
+                        <Tooltip content="Detalles">
+                          <span
+                            className="text-lg text-default-400 cursor-pointer active:opacity-50"
+                            data-bs-toggle="modal"
+                            data-bs-target="#exampleModal2"
+                            onClick={() => setSelectedTicket(ticket)}
+                          >
+                            <AiFillEye />
+                          </span>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>{ticket.tracking_id}</TableCell>
+                      <TableCell>{ticket.nombre_casa}</TableCell>
+                      <TableCell>{ticket.nombre_creador}</TableCell>
+                      <TableCell>{ticket.asunto}</TableCell>
+                      <TableCell>{ticket.estado}</TableCell>
+                      <TableCell>{ticket.prioridad}</TableCell>
+                      <TableCell>{ticket.sector}</TableCell>
+                      <TableCell>
+                        {new Date(ticket.fecha_vencimiento)
+                          .toLocaleDateString()
+                          .split('-')
+                          .reverse()
+                          .join('-')}
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
 
-      return null; // No renderiza filas que no coincidan con la opción seleccionada
-    })}
-</TableBody>
+                return null; // No renderiza filas que no coincidan con la opción seleccionada
+              })}
+          </TableBody>
 
 
         </Table>
@@ -1045,12 +1150,30 @@ casaTextLines.forEach((line) => {
                 </div>
                 <div class="sm:col-span-2">
                   <label for="message" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center"> <AiOutlineTeam className="mr-1" /> Derivado</label>
-                  <input id="description" disabled readonly rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" value={selectedTicket?.derivado}/>
+                  <input id="description" disabled readonly rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" value={selectedTicket?.derivado} />
                 </div>
                 {selectedTicket?.archivos_adjuntos && (
                   <div class="sm:col-span-2">
                     <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center"><AiOutlineCamera className="mr-1" /> Foto</label>
                     <img class="h-auto max-w-xs rounded-lg" src={selectedTicket?.archivos_adjuntos} alt="image description" />
+                  </div>
+                )}
+                {selectedTicket?.archivos_adjuntos_2 && (
+                  <div class="sm:col-span-2">
+                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center"><AiOutlineCamera className="mr-1" /> Foto</label>
+                    <img class="h-auto max-w-xs rounded-lg" src={selectedTicket?.archivos_adjuntos_2} alt="image description" />
+                  </div>
+                )}
+                {selectedTicket?.archivos_adjuntos_3 && (
+                  <div class="sm:col-span-2">
+                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center"><AiOutlineCamera className="mr-1" /> Foto</label>
+                    <img class="h-auto max-w-xs rounded-lg" src={selectedTicket?.archivos_adjuntos_3} alt="image description" />
+                  </div>
+                )}
+                {selectedTicket?.archivos_adjuntos_4 && (
+                  <div class="sm:col-span-2">
+                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center"><AiOutlineCamera className="mr-1" /> Foto</label>
+                    <img class="h-auto max-w-xs rounded-lg" src={selectedTicket?.archivos_adjuntos_4} alt="image description" />
                   </div>
                 )}
               </div>
@@ -1082,7 +1205,7 @@ casaTextLines.forEach((line) => {
                     className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                     placeholder="Escribe un comentario..."
                   ></textarea></div>
-                  
+
               </div>
 
 
@@ -1103,26 +1226,25 @@ casaTextLines.forEach((line) => {
                   await handleEnviarComentario(selectedTicket?.id); // Llama a la función para enviar comentarios con selectedTicket?.id como argumento
                 }}
               >
-              
+
                 <AiOutlineUpload />
                 Actualizar Ticket
-              </Button>   
+              </Button>
               <Button
                 type="button"
                 className="text-white"
                 style={{ backgroundColor: "#d11919" }}
                 onClick={exportToPDF}
               >
-              
-                <SiAdobeacrobatreader/>
+
+                <SiAdobeacrobatreader />
                 Exportar PDF
-              </Button>  
-                </div>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-      {
-  /*
+      {/*
     <div>
       <h2>Perfil de Usuario</h2>
       {userData ? (
@@ -1150,8 +1272,7 @@ casaTextLines.forEach((line) => {
         <p>No se encontraron datos del usuario.</p>
       )}
     </div>
-*/
-}
+  */}
     </div>
   );
 }
