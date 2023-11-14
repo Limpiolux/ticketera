@@ -54,11 +54,11 @@ https://servicios.grupolimpiolux.com.ar:3001/api/changepassword/:id
 ~~~
 
 ## Screenshots
-![Login](https://i.ibb.co/yk4MdXR/Screen-Shot-Tool-20231108122448.png)
+![Login](images/login.png)
 
-![Dashboard](https://i.ibb.co/qDFr6hH/Screen-Shot-Tool-20231108122731.png)
+![Dashboard](images/dashboard.png)
 
-![Gráficos](https://i.ibb.co/dpFprd1/Screen-Shot-Tool-20231108122822.png)
+![Gráficos](images/graficos.png)
 
 
 
